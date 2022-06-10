@@ -2,13 +2,13 @@
 
 **This is a spin-off from the original Home Assistant integration, which was removed in Home Assistant Core version 2022.6.**
 
-The `rpi_gpio` integration supports the following platforms: `Binary Sensor`, `Cover`, `Switch`
+The `opi_gpio` integration supports the following platforms: `Binary Sensor`, `Cover`, `Switch`
 
 # Installation
 
 ### HACS
 
-The recommend way to install `rpi_gpio` is through [HACS](https://hacs.xyz/).
+The recommend way to install `opi_gpio` is through [HACS](https://hacs.xyz/).
 
 ### Manual installation
 
@@ -29,7 +29,7 @@ To use your Raspberry Pi's GPIO in your installation, add the following to your 
 ```yaml
 # Basic configuration.yaml entry
 binary_sensor:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     sensors:
       - port: 11
         name: "PIR Office"
@@ -40,7 +40,7 @@ binary_sensor:
 ```yaml
 # Full configuration.yaml entry
 binary_sensor:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     sensors:
       - port: 11
         name: "PIR Office"
@@ -68,7 +68,7 @@ For more details about the GPIO layout, visit the Wikipedia [article](https://en
 
 ## Cover
 
-The `rpi_gpio` cover platform allows you to use a Raspberry Pi to control your cover such as Garage doors.
+The `opi_gpio` cover platform allows you to use a Raspberry Pi to control your cover such as Garage doors.
 
 It uses two pins on the Raspberry Pi.
 
@@ -84,7 +84,7 @@ To enable Raspberry Pi Covers in your installation, add the following to your `c
 ```yaml
 # Basic configuration.yaml entry
 cover:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     covers:
       - relay_pin: 10
         state_pin: 11
@@ -93,7 +93,7 @@ cover:
 ```yaml
 # Full configuration.yaml entry
 cover:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     relay_time: 0.2
     invert_relay: false
     state_pull_mode: "UP"
@@ -127,7 +127,7 @@ If you don't have Home Assistant running on your Raspberry Pi and you want to us
 
 ## Switch
 
-The `rpi_gpio` switch platform allows you to control the GPIOs of your [Raspberry Pi](https://www.raspberrypi.org/).
+The `opi_gpio` switch platform allows you to control the GPIOs of your [Raspberry Pi](https://www.raspberrypi.org/).
 
 ### Configuration
 
@@ -138,7 +138,7 @@ To use your Raspberry Pi's GPIO in your installation, add the following to your 
 ```yaml
 # Basic configuration.yaml entry
 switch:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     switches:
       - port: 11
         name: "Fan Office"
@@ -149,7 +149,7 @@ switch:
 ```yaml
 # Full configuration.yaml entry
 switch:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     switches:
       - port: 11
         name: "Fan Office"
@@ -177,7 +177,7 @@ For example, if you have a relay connected to pin 11 its GPIO # is 17.
 ```yaml
 # Basic configuration.yaml entry
 switch:
-  - platform: rpi_gpio
+  - platform: opi_gpio
     switches:
       - port: 17
         name: "Speaker Relay"
