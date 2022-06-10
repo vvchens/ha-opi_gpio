@@ -1,4 +1,4 @@
-"""Support for controlling a Raspberry Pi cover."""
+"""Support for controlling a Orange Pi cover."""
 from __future__ import annotations
 
 from time import sleep
@@ -57,7 +57,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the RPi cover platform."""
+    """Set up the OPi cover platform."""
     setup_reload_service(hass, DOMAIN, PLATFORMS)
 
     relay_time = config[CONF_RELAY_TIME]
@@ -69,7 +69,7 @@ def setup_platform(
 
     for cover in covers_conf:
         covers.append(
-            RPiGPIOCover(
+            OPiGPIOCover(
                 cover[CONF_NAME],
                 cover[CONF_RELAY_PIN],
                 cover[CONF_STATE_PIN],
@@ -83,8 +83,8 @@ def setup_platform(
     add_entities(covers)
 
 
-class RPiGPIOCover(CoverEntity):
-    """Representation of a Raspberry GPIO cover."""
+class OPiGPIOCover(CoverEntity):
+    """Representation of a Orange GPIO cover."""
 
     def __init__(
         self,

@@ -1,6 +1,6 @@
-"""Support for controlling GPIO pins of a Raspberry Pi."""
+"""Support for controlling GPIO pins of a Orange Pi."""
 
-from RPi import GPIO  # pylint: disable=import-error
+from OPi import GPIO
 
 from homeassistant.const import (
     EVENT_HOMEASSISTANT_START,
@@ -10,7 +10,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
-DOMAIN = "rpi_gpio"
+DOMAIN = "opi_gpio"
 PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.COVER,
@@ -19,7 +19,7 @@ PLATFORMS = [
 
 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Raspberry PI GPIO component."""
+    """Set up the Orange PI GPIO component."""
 
     def cleanup_gpio(event):
         """Stuff to do before stopping."""

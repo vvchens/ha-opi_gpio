@@ -1,4 +1,4 @@
-"""Support for binary sensor using RPi GPIO."""
+"""Support for binary sensor using OPi GPIO."""
 from __future__ import annotations
 
 import asyncio
@@ -65,7 +65,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the Raspberry PI GPIO devices."""
+    """Set up the Orange PI GPIO devices."""
     setup_reload_service(hass, DOMAIN, PLATFORMS)
 
     sensors = []
@@ -74,7 +74,7 @@ def setup_platform(
     if sensors_conf is not None:
         for sensor in sensors_conf:
             sensors.append(
-                RPiGPIOBinarySensor(
+                OPiGPIOBinarySensor(
                     sensor[CONF_NAME],
                     sensor[CONF_PORT],
                     sensor[CONF_PULL_MODE],
@@ -94,7 +94,7 @@ def setup_platform(
     ports = config[CONF_PORTS]
     for port_num, port_name in ports.items():
         sensors.append(
-            RPiGPIOBinarySensor(
+            OPiGPIOBinarySensor(
                 port_name, port_num, pull_mode, bouncetime, invert_logic
             )
         )
@@ -102,8 +102,8 @@ def setup_platform(
     add_entities(sensors, True)
 
 
-class RPiGPIOBinarySensor(BinarySensorEntity):
-    """Represent a binary sensor that uses Raspberry Pi GPIO."""
+class OPiGPIOBinarySensor(BinarySensorEntity):
+    """Represent a binary sensor that uses Orange Pi GPIO."""
 
     async def async_read_gpio(self):
         """Read state from GPIO."""
@@ -112,7 +112,7 @@ class RPiGPIOBinarySensor(BinarySensorEntity):
         self.async_write_ha_state()
 
     def __init__(self, name, port, pull_mode, bouncetime, invert_logic, unique_id=None):
-        """Initialize the RPi binary sensor."""
+        """Initialize the OPi binary sensor."""
         self._attr_name = name or DEVICE_DEFAULT_NAME
         self._attr_unique_id = unique_id
         self._attr_should_poll = False

@@ -1,4 +1,4 @@
-"""Allows to configure a switch using RPi GPIO."""
+"""Allows to configure a switch using OPi GPIO."""
 from __future__ import annotations
 
 import voluptuous as vol
@@ -57,7 +57,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the Raspberry PI GPIO devices."""
+    """Set up the Orange PI GPIO devices."""
     setup_reload_service(hass, DOMAIN, PLATFORMS)
 
     switches = []
@@ -66,7 +66,7 @@ def setup_platform(
     if switches_conf is not None:
         for switch in switches_conf:
             switches.append(
-                RPiGPIOSwitch(
+                OPiGPIOSwitch(
                     switch[CONF_NAME],
                     switch[CONF_PORT],
                     switch[CONF_INVERT_LOGIC],
@@ -81,13 +81,13 @@ def setup_platform(
 
     ports = config[CONF_PORTS]
     for port, name in ports.items():
-        switches.append(RPiGPIOSwitch(name, port, invert_logic))
+        switches.append(OPiGPIOSwitch(name, port, invert_logic))
 
     add_entities(switches)
 
 
-class RPiGPIOSwitch(SwitchEntity):
-    """Representation of a  Raspberry Pi GPIO."""
+class OPiGPIOSwitch(SwitchEntity):
+    """Representation of a  Orange Pi GPIO."""
 
     def __init__(self, name, port, invert_logic, unique_id=None):
         """Initialize the pin."""
