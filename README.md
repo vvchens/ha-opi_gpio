@@ -1,4 +1,4 @@
-# Home Assistant Raspberry Pi GPIO custom integration
+# Home Assistant ~~Raspberry~~Orange Pi GPIO custom integration
 
 **This is a spin-off from the original Home Assistant integration, which was removed in Home Assistant Core version 2022.6.**
 
