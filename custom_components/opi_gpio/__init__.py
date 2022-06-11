@@ -30,7 +30,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
         hass.bus.listen_once(EVENT_HOMEASSISTANT_STOP, cleanup_gpio)
 
     hass.bus.listen_once(EVENT_HOMEASSISTANT_START, prepare_gpio)
-    GPIO.setmode(GPIO.BCM)
+    GPIO.setmode(GPIO.BOARD)
     return True
 
 
