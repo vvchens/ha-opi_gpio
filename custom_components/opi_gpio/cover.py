@@ -22,6 +22,7 @@ CONF_INVERT_RELAY = "invert_relay"
 CONF_INTERMEDIATE_MODE = 'intermediate_mode'
 CONF_CLOSE_DURATION = "close_duration"
 CONF_OPEN_DURATION = "open_duration"
+CONF_DEVICE_CLASS = "device_class"
 
 DEFAULT_RELAY_TIME = 0.2
 DEFAULT_INVERT_RELAY = False
@@ -37,7 +38,12 @@ _COVERS_SCHEMA = vol.All(
                 CONF_NAME: cv.string,
                 CONF_CLOSE_PIN: cv.positive_int,
                 CONF_STOP_PIN: cv.positive_int,
-                CONF_OPEN_PIN: cv.positive_int,
+                CONF_OPEN_PIN: cv.positive_int,        
+                vol.Optional(CONF_INVERT_RELAY, default=DEFAULT_INVERT_RELAY): cv.boolean,
+                vol.Optional(CONF_INTERMEDIATE_MODE, default=DEFAULT_INTERMEDIATE_MODE): cv.boolean,
+                vol.Optional(CONF_CLOSE_DURATION, default=DEFAULT_CLOSE_DURATION): cv.positive_int,
+                vol.Optional(CONF_OPEN_DURATION, default=DEFAULT_OPEN_DURATION): cv.positive_int,
+                vol.Optional(CONF_DEVICE_CLASS, default=None): cv.string,
             }
         )
     ],
@@ -46,10 +52,6 @@ _COVERS_SCHEMA = vol.All(
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_COVERS): _COVERS_SCHEMA,
-        vol.Optional(CONF_INVERT_RELAY, default=DEFAULT_INVERT_RELAY): cv.boolean,
-        vol.Optional(CONF_INTERMEDIATE_MODE, default=DEFAULT_INTERMEDIATE_MODE): cv.boolean,
-        vol.Optional(CONF_CLOSE_DURATION, default=DEFAULT_CLOSE_DURATION): cv.positive_int,
-        vol.Optional(CONF_OPEN_DURATION, default=DEFAULT_OPEN_DURATION): cv.positive_int,
     }
 )
 
@@ -77,6 +79,7 @@ def setup_platform(
                 cover[CONF_INTERMEDIATE_MODE],
                 cover[CONF_CLOSE_DURATION],
                 cover[CONF_OPEN_DURATION],
+                cover[CONF_DEVICE_CLASS],
                 cover.get(CONF_UNIQUE_ID),
             )
         )
@@ -96,6 +99,7 @@ class OPiGPIOCover(CoverEntity):
         intermediate_mode,
         close_duration,
         open_duration,
+        device_class,
         
         unique_id,
     ):
@@ -110,6 +114,7 @@ class OPiGPIOCover(CoverEntity):
         self._intermediate_mode = intermediate_mode
         self._close_duration = close_duration
         self._open_duration = open_duration
+        self._attr_device_class = device_class
 
         setup_output(self._close_pin)
         setup_output(self._stop_pin)
@@ -121,8 +126,6 @@ class OPiGPIOCover(CoverEntity):
 
     def update(self):
         """Update the state of the cover."""
-
-
 
     @property
     def is_closed(self):
