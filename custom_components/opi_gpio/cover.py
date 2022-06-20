@@ -6,35 +6,38 @@ from time import sleep
 import voluptuous as vol
 
 from homeassistant.components.cover import PLATFORM_SCHEMA, CoverEntity
-from homeassistant.const import CONF_COVERS, CONF_NAME, CONF_UNIQUE_ID
+from homeassistant.const import CONF_COVERS, CONF_NAME, CONF_UNIQUE_ID, STATE_CLOSED, STATE_CLOSING, STATE_OPEN, STATE_OPENING
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.reload import setup_reload_service
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from . import DOMAIN, PLATFORMS, read_input, setup_input, setup_output, write_output
+from . import DOMAIN, PLATFORMS, setup_output, write_output
 
-CONF_RELAY_PIN = "relay_pin"
-CONF_RELAY_TIME = "relay_time"
-CONF_STATE_PIN = "state_pin"
-CONF_STATE_PULL_MODE = "state_pull_mode"
-CONF_INVERT_STATE = "invert_state"
+CONF_CLOSE_PIN = "close_pin"
+CONF_STOP_PIN = "stop_pin"
+CONF_OPEN_PIN = "open_pin"
 CONF_INVERT_RELAY = "invert_relay"
+CONF_INTERMEDIATE_MODE = 'intermediate_mode'
+CONF_CLOSE_DURATION = "close_duration"
+CONF_OPEN_DURATION = "open_duration"
 
 DEFAULT_RELAY_TIME = 0.2
-DEFAULT_STATE_PULL_MODE = "UP"
-DEFAULT_INVERT_STATE = False
 DEFAULT_INVERT_RELAY = False
+DEFAULT_INTERMEDIATE_MODE = False
+DEFAULT_CLOSE_DURATION = 5000
+DEFAULT_OPEN_DURATION = 5000
+
 _COVERS_SCHEMA = vol.All(
     cv.ensure_list,
     [
         vol.Schema(
             {
                 CONF_NAME: cv.string,
-                CONF_RELAY_PIN: cv.positive_int,
-                CONF_STATE_PIN: cv.positive_int,
-                vol.Optional(CONF_UNIQUE_ID): cv.string,
+                CONF_CLOSE_PIN: cv.positive_int,
+                CONF_STOP_PIN: cv.positive_int,
+                CONF_OPEN_PIN: cv.positive_int,
             }
         )
     ],
@@ -43,10 +46,10 @@ _COVERS_SCHEMA = vol.All(
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_COVERS): _COVERS_SCHEMA,
-        vol.Optional(CONF_STATE_PULL_MODE, default=DEFAULT_STATE_PULL_MODE): cv.string,
-        vol.Optional(CONF_RELAY_TIME, default=DEFAULT_RELAY_TIME): cv.positive_int,
-        vol.Optional(CONF_INVERT_STATE, default=DEFAULT_INVERT_STATE): cv.boolean,
         vol.Optional(CONF_INVERT_RELAY, default=DEFAULT_INVERT_RELAY): cv.boolean,
+        vol.Optional(CONF_INTERMEDIATE_MODE, default=DEFAULT_INTERMEDIATE_MODE): cv.boolean,
+        vol.Optional(CONF_CLOSE_DURATION, default=DEFAULT_CLOSE_DURATION): cv.positive_int,
+        vol.Optional(CONF_OPEN_DURATION, default=DEFAULT_OPEN_DURATION): cv.positive_int,
     }
 )
 
@@ -60,10 +63,6 @@ def setup_platform(
     """Set up the OPi cover platform."""
     setup_reload_service(hass, DOMAIN, PLATFORMS)
 
-    relay_time = config[CONF_RELAY_TIME]
-    state_pull_mode = config[CONF_STATE_PULL_MODE]
-    invert_state = config[CONF_INVERT_STATE]
-    invert_relay = config[CONF_INVERT_RELAY]
     covers = []
     covers_conf = config[CONF_COVERS]
 
@@ -71,12 +70,13 @@ def setup_platform(
         covers.append(
             OPiGPIOCover(
                 cover[CONF_NAME],
-                cover[CONF_RELAY_PIN],
-                cover[CONF_STATE_PIN],
-                state_pull_mode,
-                relay_time,
-                invert_state,
-                invert_relay,
+                cover[CONF_CLOSE_PIN],
+                cover[CONF_STOP_PIN],
+                cover[CONF_OPEN_PIN],
+                cover[CONF_INVERT_RELAY],
+                cover[CONF_INTERMEDIATE_MODE],
+                cover[CONF_CLOSE_DURATION],
+                cover[CONF_OPEN_DURATION],
                 cover.get(CONF_UNIQUE_ID),
             )
         )
@@ -89,49 +89,69 @@ class OPiGPIOCover(CoverEntity):
     def __init__(
         self,
         name,
-        relay_pin,
-        state_pin,
-        state_pull_mode,
-        relay_time,
-        invert_state,
+        close_pin,
+        stop_pin,
+        open_pin,
         invert_relay,
+        intermediate_mode,
+        close_duration,
+        open_duration,
+        
         unique_id,
     ):
         """Initialize the cover."""
         self._attr_name = name
         self._attr_unique_id = unique_id
-        self._state = False
-        self._relay_pin = relay_pin
-        self._state_pin = state_pin
-        self._state_pull_mode = state_pull_mode
-        self._relay_time = relay_time
-        self._invert_state = invert_state
+        self._state = STATE_CLOSED
+        self._close_pin = close_pin
+        self._stop_pin = stop_pin
+        self._open_pin = open_pin
         self._invert_relay = invert_relay
-        setup_output(self._relay_pin)
-        setup_input(self._state_pin, self._state_pull_mode)
-        write_output(self._relay_pin, 0 if self._invert_relay else 1)
+        self._intermediate_mode = intermediate_mode
+        self._close_duration = close_duration
+        self._open_duration = open_duration
+
+        setup_output(self._close_pin)
+        setup_output(self._stop_pin)
+        setup_output(self._open_pin)
+        write_output(self._close_pin, 1 if self._invert_relay else 0)
+        write_output(self._stop_pin, 1 if self._invert_relay else 0)
+        write_output(self._open_pin, 1 if self._invert_relay else 0)
+
 
     def update(self):
         """Update the state of the cover."""
-        self._state = read_input(self._state_pin)
+
+
 
     @property
     def is_closed(self):
         """Return true if cover is closed."""
-        return self._state != self._invert_state
+        return self._state == STATE_CLOSED
 
-    def _trigger(self):
-        """Trigger the cover."""
-        write_output(self._relay_pin, 1 if self._invert_relay else 0)
-        sleep(self._relay_time)
-        write_output(self._relay_pin, 0 if self._invert_relay else 1)
+    def _trigger(self, pin, val, delay, duration):
+        write_output(pin, val)
+        sleep(delay)
+        write_output(pin, 0 if val == 1 else 1)
+        sleep(duration)
 
     def close_cover(self, **kwargs):
         """Close the cover."""
         if not self.is_closed:
-            self._trigger()
+            self._state = STATE_CLOSING
+            self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._close_duration)
+            self._state = STATE_CLOSED
 
     def open_cover(self, **kwargs):
         """Open the cover."""
         if self.is_closed:
-            self._trigger()
+            self._state = STATE_OPENING
+            if self._intermediate_mode:
+                self._trigger(self._stop_pin, 0 if self._invert_relay else 1, 5000, self._open_duration)
+            else:
+                self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._open_duration)
+            self._state = STATE_OPEN
+
+    def stop_cover(self, **kwargs):
+        """Stop the cover."""
+        self._trigger(self._stop_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, 0)
