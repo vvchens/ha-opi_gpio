@@ -25,10 +25,11 @@ CONF_OPEN_DURATION = "open_duration"
 CONF_DEVICE_CLASS = "device_class"
 
 DEFAULT_RELAY_TIME = 0.2
+DEFAULT_INTERMEDIATE_TIME = 5
 DEFAULT_INVERT_RELAY = False
 DEFAULT_INTERMEDIATE_MODE = False
-DEFAULT_CLOSE_DURATION = 5000
-DEFAULT_OPEN_DURATION = 5000
+DEFAULT_CLOSE_DURATION = 5
+DEFAULT_OPEN_DURATION = 5
 
 _COVERS_SCHEMA = vol.All(
     cv.ensure_list,
@@ -147,7 +148,7 @@ class OPiGPIOCover(CoverEntity):
         if self.is_closed:
             self._state = STATE_OPENING
             if self._intermediate_mode:
-                self._trigger(self._stop_pin, 0 if self._invert_relay else 1, 5000, self._open_duration)
+                self._trigger(self._stop_pin, 0 if self._invert_relay else 1, DEFAULT_INTERMEDIATE_TIME, self._open_duration)
             else:
                 self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._open_duration)
             self._state = STATE_OPEN
