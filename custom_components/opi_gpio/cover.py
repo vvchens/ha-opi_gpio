@@ -44,6 +44,7 @@ _COVERS_SCHEMA = vol.All(
                 vol.Optional(CONF_CLOSE_DURATION, default=DEFAULT_CLOSE_DURATION): cv.positive_int,
                 vol.Optional(CONF_OPEN_DURATION, default=DEFAULT_OPEN_DURATION): cv.positive_int,
                 vol.Optional(CONF_DEVICE_CLASS, default=None): cv.string,
+                vol.Optional(CONF_UNIQUE_ID): cv.string,
             }
         )
     ],
