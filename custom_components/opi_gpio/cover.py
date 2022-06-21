@@ -123,10 +123,6 @@ class OPiGPIOCover(CoverEntity):
         write_output(self._stop_pin, 1 if self._invert_relay else 0)
         write_output(self._open_pin, 1 if self._invert_relay else 0)
 
-
-    def update(self):
-        """Update the state of the cover."""
-
     @property
     def is_closed(self):
         """Return true if cover is closed."""
