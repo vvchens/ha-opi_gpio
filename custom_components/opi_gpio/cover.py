@@ -136,7 +136,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             last_state = await self.async_get_last_state()
             
             if last_state is not None:
-                self._state = STATE_OPEN if last_state.state == "on" else STATE_CLOSED
+                self._state = last_state.state
 
     @property
     def is_closed(self):
