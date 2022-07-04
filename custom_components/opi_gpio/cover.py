@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.reload import setup_reload_service
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from . import DOMAIN, PLATFORMS, setup_output, write_output
@@ -88,7 +89,7 @@ def setup_platform(
     add_entities(covers)
 
 
-class OPiGPIOCover(CoverEntity):
+class OPiGPIOCover(CoverEntity, RestoreEntity):
     """Representation of a Orange GPIO cover."""
 
     def __init__(
@@ -117,6 +118,7 @@ class OPiGPIOCover(CoverEntity):
         self._close_duration = close_duration
         self._open_duration = open_duration
         self._attr_device_class = device_class
+        self._should_restore = True
 
         setup_output(self._close_pin)
         setup_output(self._stop_pin)
@@ -124,6 +126,17 @@ class OPiGPIOCover(CoverEntity):
         write_output(self._close_pin, 1 if self._invert_relay else 0)
         write_output(self._stop_pin, 1 if self._invert_relay else 0)
         write_output(self._open_pin, 1 if self._invert_relay else 0)
+
+    async def async_added_to_hass(self):
+        """Run when entity about to be added."""
+        await super().async_added_to_hass()
+        
+        if self._should_restore:
+
+            last_state = await self.async_get_last_state()
+            
+            if last_state is not None:
+                self._state = STATE_OPEN if last_state.state == "on" else STATE_CLOSED
 
     @property
     def is_closed(self):
