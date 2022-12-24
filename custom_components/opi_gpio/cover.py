@@ -16,8 +16,6 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from . import DOMAIN, PLATFORMS, setup_output, write_output
 
-from datetime import datetime
-
 CONF_CLOSE_PIN = "close_pin"
 CONF_STOP_PIN = "stop_pin"
 CONF_OPEN_PIN = "open_pin"
@@ -121,8 +119,6 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         self._open_duration = open_duration
         self._attr_device_class = device_class
         self._should_restore = True
-        self._start_time = datetime.now()
-        # self._attr_current_cover_position = 0
 
         setup_output(self._close_pin)
         setup_output(self._stop_pin)
@@ -148,7 +144,6 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         return self._state == STATE_CLOSED
 
     def _trigger(self, pin, val, delay, duration):
-        self._start_time = datetime.now()
         write_output(pin, val)
         sleep(delay)
         write_output(pin, 0 if val == 1 else 1)
@@ -160,7 +155,6 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             self._state = STATE_CLOSING
             self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._close_duration)
             self._state = STATE_CLOSED
-            # self._attr_current_cover_position = 0
 
     def open_cover(self, **kwargs):
         """Open the cover."""
@@ -171,22 +165,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             else:
                 self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._open_duration)
             self._state = STATE_OPEN
-            # self._attr_current_cover_position = 100
 
     def stop_cover(self, **kwargs):
         """Stop the cover."""
         self._trigger(self._stop_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, 0)
-
-    # def current_cover_position(self) -> int:
-    #     """Get current cover position"""
-    #     if self._state == STATE_CLOSED:
-    #         return 0
-    #     if self._state == STATE_OPEN:
-    #         return 100
-    #     timediff = datetime.now() - self._start_time
-    #     rate = int((timediff.seconds / self._close_duration) * 100)
-    #     return rate if self._state == STATE_OPENING else (100 - rate)
-
-    # def set_cover_position(self, **kwargs):
-    #     """Move the cover to a specific position."""
-    #     print(kwargs)
