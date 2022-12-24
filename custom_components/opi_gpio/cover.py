@@ -160,6 +160,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             self._state = STATE_CLOSING
             self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._close_duration)
             self._state = STATE_CLOSED
+            self._attr_current_cover_position = 0
 
     def open_cover(self, **kwargs):
         """Open the cover."""
@@ -170,6 +171,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             else:
                 self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._open_duration)
             self._state = STATE_OPEN
+            self._attr_current_cover_position = 100
 
     def stop_cover(self, **kwargs):
         """Stop the cover."""
@@ -185,6 +187,6 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
     #     rate = int((timediff.seconds / self._close_duration) * 100)
     #     return rate if self._state == STATE_OPENING else (100 - rate)
 
-    def set_cover_position(self, **kwargs):
-        """Move the cover to a specific position."""
-        print(kwargs)
+    # def set_cover_position(self, **kwargs):
+    #     """Move the cover to a specific position."""
+    #     print(kwargs)
