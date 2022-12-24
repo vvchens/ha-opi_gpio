@@ -120,7 +120,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         self._close_duration = close_duration
         self._open_duration = open_duration
         self._attr_device_class = device_class
-        self._should_restore = True
+        self._should_restore = False
         self._start_time = datetime.now()
         self._attr_current_cover_position = 0
 
