@@ -122,7 +122,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         self._attr_device_class = device_class
         self._should_restore = True
         self._start_time = datetime.now()
-        self._attr_current_cover_position = 0
+        # self._attr_current_cover_position = 0
 
         setup_output(self._close_pin)
         setup_output(self._stop_pin)
@@ -160,7 +160,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             self._state = STATE_CLOSING
             self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._close_duration)
             self._state = STATE_CLOSED
-            self._attr_current_cover_position = 0
+            # self._attr_current_cover_position = 0
 
     def open_cover(self, **kwargs):
         """Open the cover."""
@@ -171,7 +171,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             else:
                 self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._open_duration)
             self._state = STATE_OPEN
-            self._attr_current_cover_position = 100
+            # self._attr_current_cover_position = 100
 
     def stop_cover(self, **kwargs):
         """Stop the cover."""
