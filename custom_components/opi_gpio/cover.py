@@ -176,6 +176,10 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
 
     def current_cover_position(self) -> int:
         """Get current cover position"""
+        if self._state == STATE_CLOSED:
+            return 0
+        if self._state == STATE_OPEN:
+            return 100
         timediff = datetime.now() - self._start_time
         rate = int((timediff.seconds / self._close_duration) * 100)
         return rate if self._state == STATE_OPENING else (100 - rate)
