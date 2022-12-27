@@ -121,7 +121,8 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         self._open_duration = open_duration
         self._attr_device_class = device_class
         self._should_restore = True
-        self._attr_current_cover_position = 0
+        if self._open_duration != 0 and self._close_duration != 0:
+            self._attr_current_cover_position = 0
         self._timer : Timer = None
 
         setup_output(self._close_pin)
@@ -162,20 +163,13 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         sleep(delay)
         write_output(pin, 0 if val == 1 else 1)
 
-    def _update_position(self, duration, is_open: bool, need_stop: bool = False):
+    def _update_position(self, duration, done):
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
         def _done(i):
-            rate = int(i / duration * 100) if duration != 0 else 100
-            self._attr_current_cover_position = rate if not is_open else (100 - rate)
-            if i == 0:
-                if need_stop:
-                    self.stop_cover()
-                if self._attr_current_cover_position == 0:
-                    self._state = STATE_CLOSED
-                if self._attr_current_cover_position == 100:
-                    self._state = STATE_OPEN
+            rate = int(i / duration * 100) if duration != 0 else 0
+            done(rate)
         self._counter(duration, _done)
 
     def _counter(self, i, callback):
@@ -189,13 +183,21 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
 
     def close_cover(self, **_):
         """Close the cover."""
+        def _closed(i):
+            if i == 0:
+                self._attr_current_cover_position = 0
+                self._state = STATE_CLOSED
         if not self.is_closed:
             self._state = STATE_CLOSING
             self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
-            self._update_position(self._close_duration, False)
+            self._update_position(self._close_duration, _closed)
 
     def open_cover(self, **_):
         """Open the cover."""
+        def _opened(i):
+            if i == 0:
+                self._attr_current_cover_position = 100
+                self._state = STATE_OPEN
         if self.is_closed:
             self._state = STATE_OPENING
             if self._intermediate_mode:
@@ -203,7 +205,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
                               DEFAULT_INTERMEDIATE_TIME)
             else:
                 self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
-            self._update_position(self._open_duration, True)
+            self._update_position(self._open_duration, _opened)
 
     def stop_cover(self, **_):
         """Stop the cover."""
@@ -217,7 +219,18 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             duration = (position - self.current_cover_position) / self._open_duration
         else:
             duration = (self.current_cover_position - position) / self._close_duration
+        def _position(i):
+            if is_open:
+                self._attr_current_cover_position += int(100 / self._open_duration)
+            else:
+                self._attr_current_cover_position -= int(100 / self._close_durationO)
+            if i == 0:
+                 # self._attr_current_cover_position = rate if not is_open else (100 - rate)
+                if self._attr_current_cover_position >= 99:
+                    self._state = STATE_OPEN
+                if self._attr_current_cover_position <= 1:
+                    self._state = STATE_CLOSED
         if duration != 0:
             self._trigger(self._open_pin if is_open else self._close_pin,
                       0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
-            self._update_position(duration, is_open, True)
+            self._update_position(duration, _position)
