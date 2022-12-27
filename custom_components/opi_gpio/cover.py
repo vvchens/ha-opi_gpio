@@ -163,27 +163,28 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         sleep(delay)
         write_output(pin, 0 if val == 1 else 1)
 
-    def _update_position(self, duration, done):
+    def _update_position(self, duration:float, done):
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
-        def _done(i):
-            rate = int(i / duration * 100) if duration != 0 else 0
+        def _done(i:float):
+            rate = int(i / duration * 100.0) if duration != 0 else 0
             done(rate)
         self._counter(duration, _done)
 
-    def _counter(self, i, callback):
-        if i > 0:
+    def _counter(self, i:float, callback):
+        if i > 0.0:
             _i = i - 1
             self._timer = Timer(1.0, self._counter, (_i, callback))
             self._timer.start()
             callback(_i)
         else:
-            callback(0)
+            callback(0.0)
 
     def close_cover(self, **_):
         """Close the cover."""
         def _closed(i):
+            self._attr_current_cover_position -= int(100.0 / self._close_duration)
             if i == 0:
                 self._attr_current_cover_position = 0
                 self._state = STATE_CLOSED
@@ -195,6 +196,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
     def open_cover(self, **_):
         """Open the cover."""
         def _opened(i):
+            self._attr_current_cover_position += int(100 / self._open_duration)
             if i == 0:
                 self._attr_current_cover_position = 100
                 self._state = STATE_OPEN
