@@ -216,9 +216,9 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         position = kwargs[ATTR_POSITION]
         is_open = position > self.current_cover_position
         if is_open:
-            duration = (position - self.current_cover_position) / self._open_duration
+            duration = self._open_duration / 100 * (position - self.current_cover_position)
         else:
-            duration = (self.current_cover_position - position) / self._close_duration
+            duration = self._close_duration / 100 * (self.current_cover_position - position)
         def _position(i):
             if is_open:
                 self._attr_current_cover_position += int(100 / self._open_duration)
