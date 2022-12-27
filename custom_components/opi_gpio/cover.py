@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from time import sleep
+from threading import Timer
 
 import voluptuous as vol
 
-from homeassistant.components.cover import PLATFORM_SCHEMA, CoverEntity
+from homeassistant.components.cover import PLATFORM_SCHEMA, CoverEntity, ATTR_POSITION
 from homeassistant.const import CONF_COVERS, CONF_NAME, CONF_UNIQUE_ID, STATE_CLOSED, STATE_CLOSING, STATE_OPEN, STATE_OPENING
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
@@ -16,7 +17,6 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from . import DOMAIN, PLATFORMS, setup_output, write_output
 
-from datetime import datetime
 
 CONF_CLOSE_PIN = "close_pin"
 CONF_STOP_PIN = "stop_pin"
@@ -105,7 +105,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         close_duration,
         open_duration,
         device_class,
-        
+
         unique_id,
     ):
         """Initialize the cover."""
@@ -120,9 +120,10 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         self._close_duration = close_duration
         self._open_duration = open_duration
         self._attr_device_class = device_class
-        self._should_restore = False
+        self._should_restore = True
         self._start_time = datetime.now()
         self._attr_current_cover_position = 0
+        self._timer : Timer = None
 
         setup_output(self._close_pin)
         setup_output(self._stop_pin)
@@ -134,59 +135,78 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
         await super().async_added_to_hass()
-        
+
         if self._should_restore:
 
             last_state = await self.async_get_last_state()
-            
+
             if last_state is not None:
                 self._state = last_state.state
 
     @property
-    def is_closed(self):
-        """Return true if cover is closed."""
-        return self._state == STATE_CLOSED
+    def is_closed(self) -> bool:
+        """Return if the cover is closed."""
+        return self._position == 0
 
-    def _trigger(self, pin, val, delay, duration):
-        self._start_time = datetime.now()
+    @property
+    def is_opening(self) -> bool:
+        """Return if the cover is currently opening."""
+        return self._state == STATE_OPENING
+
+    @property
+    def is_closing(self) -> bool:
+        """Return if the cover is currently closing."""
+        return self._state == STATE_CLOSING
+
+    def _trigger(self, pin, val, delay):
         write_output(pin, val)
         sleep(delay)
         write_output(pin, 0 if val == 1 else 1)
-        sleep(duration)
 
-    def close_cover(self, **kwargs):
+    def _update_position(self, duration, is_open: bool, need_stop: bool = False):
+        i = 0
+        def _i():
+            nonlocal i
+            i += 1
+            rate = int(i / duration * 100)
+            self._attr_current_cover_position = rate if is_open else (100 - rate)
+            if rate >= 100:
+                self._timer.cancel()
+                if need_stop:
+                    self.stop_cover()
+                self._state = STATE_OPEN if is_open else STATE_CLOSED
+        self._timer = Timer(1, _i)
+
+    def close_cover(self, **_):
         """Close the cover."""
         if not self.is_closed:
             self._state = STATE_CLOSING
-            self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._close_duration)
-            self._state = STATE_CLOSED
-            self._attr_current_cover_position = 0
+            self._trigger(self._close_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
+            self._update_position(self._close_duration, False)
 
-    def open_cover(self, **kwargs):
+    def open_cover(self, **_):
         """Open the cover."""
         if self.is_closed:
             self._state = STATE_OPENING
             if self._intermediate_mode:
-                self._trigger(self._stop_pin, 0 if self._invert_relay else 1, DEFAULT_INTERMEDIATE_TIME, self._open_duration)
+                self._trigger(self._stop_pin, 0 if self._invert_relay else 1,
+                              DEFAULT_INTERMEDIATE_TIME)
             else:
-                self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, self._open_duration)
-            self._state = STATE_OPEN
-            self._attr_current_cover_position = 100
+                self._trigger(self._open_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
+            self._update_position(self._open_duration, True)
 
-    def stop_cover(self, **kwargs):
+    def stop_cover(self, **_):
         """Stop the cover."""
-        self._trigger(self._stop_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME, 0)
+        self._trigger(self._stop_pin, 0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
 
-    # def current_cover_position(self) -> int:
-    #     """Get current cover position"""
-    #     if self._state == STATE_CLOSED:
-    #         return 0
-    #     if self._state == STATE_OPEN:
-    #         return 100
-    #     timediff = datetime.now() - self._start_time
-    #     rate = int((timediff.seconds / self._close_duration) * 100)
-    #     return rate if self._state == STATE_OPENING else (100 - rate)
-
-    # def set_cover_position(self, **kwargs):
-    #     """Move the cover to a specific position."""
-    #     print(kwargs)
+    def set_cover_position(self, **kwargs):
+        """Move the cover to a specific position."""
+        position = kwargs[ATTR_POSITION]
+        is_open = position > self.current_cover_position
+        if is_open:
+            duration = (position - self.current_cover_position) / self._open_duration
+        else:
+            duration = (self.current_cover_position - position) / self._close_duration
+        self._trigger(self._open_pin if is_open else self._close_pin,
+                      0 if self._invert_relay else 1, DEFAULT_RELAY_TIME)
+        self._update_position(duration, is_open, True)
