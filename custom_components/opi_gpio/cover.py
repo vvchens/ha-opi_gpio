@@ -166,19 +166,25 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
-        i = 0
-        def _i():
-            nonlocal i
-            i += 1
+        def _done(i):
             rate = int(i / duration * 100)
-            self._attr_current_cover_position = rate if is_open else (100 - rate)
+            self._attr_current_cover_position = rate if not is_open else (100 - rate)
             if rate >= 100:
                 self._timer.cancel()
                 self._timer = None
                 if need_stop:
                     self.stop_cover()
                 self._state = STATE_OPEN if is_open else STATE_CLOSED
-        self._timer = Timer(1, _i)
+        self._counter(duration, _done)
+
+    def _counter(self, i, callback):
+        if i > 0:
+            i -= 1
+            self._timer = Timer(1.0, self._counter, (i, callback))
+            self._timer.start()
+            callback(i)
+        else:
+            callback(0)
 
     def close_cover(self, **_):
         """Close the cover."""
