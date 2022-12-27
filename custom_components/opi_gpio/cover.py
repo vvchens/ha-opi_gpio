@@ -172,7 +172,10 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             if i == 0:
                 if need_stop:
                     self.stop_cover()
-                self._state = STATE_OPEN if is_open else STATE_CLOSED
+                if self._attr_current_cover_position == 0:
+                    self._state = STATE_CLOSED
+                if self._attr_current_cover_position == 100:
+                    self._state = STATE_OPEN
         self._counter(duration, _done)
 
     def _counter(self, i, callback):
