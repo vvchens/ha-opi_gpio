@@ -227,6 +227,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             else:
                 self._attr_current_cover_position -= int(100 / self._close_duration)
             if i == 0:
+                self.stop_cover()
                  # self._attr_current_cover_position = rate if not is_open else (100 - rate)
                 if self._attr_current_cover_position >= 99:
                     self._attr_current_cover_position = 100
