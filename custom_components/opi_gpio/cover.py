@@ -145,7 +145,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
     @property
     def is_closed(self) -> bool:
         """Return if the cover is closed."""
-        return self._position == 0
+        return self._attr_current_cover_position == 0
 
     @property
     def is_opening(self) -> bool:
@@ -163,6 +163,9 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
         write_output(pin, 0 if val == 1 else 1)
 
     def _update_position(self, duration, is_open: bool, need_stop: bool = False):
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
         i = 0
         def _i():
             nonlocal i
@@ -171,6 +174,7 @@ class OPiGPIOCover(CoverEntity, RestoreEntity):
             self._attr_current_cover_position = rate if is_open else (100 - rate)
             if rate >= 100:
                 self._timer.cancel()
+                self._timer = None
                 if need_stop:
                     self.stop_cover()
                 self._state = STATE_OPEN if is_open else STATE_CLOSED
